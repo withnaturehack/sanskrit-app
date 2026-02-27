@@ -28,6 +28,9 @@ mongod
 
 ### 2) Backend API
 
+(`PORT`, `MONGODB_URI`, and `JWT_SECRET` have safe local defaults, but using `.env` is recommended.)
+
+
 ```bash
 cd backend
 cp .env.example .env
@@ -48,6 +51,18 @@ npm run start
 ```
 
 Then launch Android/iOS/Web from Expo terminal.
+
+
+## Zero-error quick checks
+
+After install, run:
+
+```bash
+cd backend && npm run build
+cd ../frontend && npm run typecheck
+```
+
+If both pass, TypeScript is clean on backend + frontend.
 
 ## Important device networking note
 
