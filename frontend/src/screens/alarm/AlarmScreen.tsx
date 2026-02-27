@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Button, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Button, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { createAlarmApi, deleteAlarmApi, fetchAlarms, fetchMantras } from '../../services/api';
 import { Alarm, Mantra } from '../../types';
 import { scheduleMantraAlarm } from '../../utils/notifications';
+import { getErrorMessage } from '../../utils/errors';
 
 export const AlarmScreen = (): JSX.Element => {
   const [selectedMantraId, setSelectedMantraId] = useState<string>('');
@@ -11,16 +12,23 @@ export const AlarmScreen = (): JSX.Element => {
   const [minute, setMinute] = useState('0');
   const [alarms, setAlarms] = useState<Alarm[]>([]);
   const [mantras, setMantras] = useState<Mantra[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const mantraMap = useMemo(() => new Map(mantras.map((mantra) => [mantra._id, mantra.title])), [mantras]);
 
   const load = async (): Promise<void> => {
-    const [alarmData, mantraData] = await Promise.all([fetchAlarms(), fetchMantras()]);
-    setAlarms(alarmData);
-    setMantras(mantraData);
+    try {
+      const [alarmData, mantraData] = await Promise.all([fetchAlarms(), fetchMantras()]);
+      setAlarms(alarmData);
+      setMantras(mantraData);
 
-    if (!selectedMantraId && mantraData.length > 0) {
-      setSelectedMantraId(mantraData[0]._id);
+      if (!selectedMantraId && mantraData.length > 0) {
+        setSelectedMantraId(mantraData[0]._id);
+      }
+    } catch (error) {
+      Alert.alert('Failed to load', getErrorMessage(error));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -43,10 +51,21 @@ export const AlarmScreen = (): JSX.Element => {
       await scheduleMantraAlarm(hourNum, minuteNum, 'Vedamitra Alarm', `Time for ${mantraTitle}`);
       await load();
       Alert.alert('Success', 'Alarm scheduled successfully');
-    } catch {
-      Alert.alert('Error', 'Failed to schedule alarm.');
+    } catch (error) {
+      Alert.alert('Error', getErrorMessage(error, 'Failed to schedule alarm.'));
     }
   };
+
+  if (loading) {
+    return (
+      <Screen>
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color="#111827" />
+          <Text style={styles.loadingText}>Loading alarms...</Text>
+        </View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
@@ -183,5 +202,14 @@ const styles = StyleSheet.create({
   empty: {
     color: '#6B7280',
     marginTop: 10
+  },
+  loadingWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  loadingText: {
+    marginTop: 8,
+    color: '#6B7280'
   }
 });

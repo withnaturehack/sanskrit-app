@@ -1,25 +1,41 @@
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import React, { useEffect, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../../components/Screen';
 import { MantraStackParamList } from '../../navigation/types';
 import { fetchMantras } from '../../services/api';
 import { Mantra } from '../../types';
+import { getErrorMessage } from '../../utils/errors';
 
 type Props = NativeStackScreenProps<MantraStackParamList, 'MantraList'>;
 
 export const MantraListScreen = ({ navigation }: Props): JSX.Element => {
   const [mantras, setMantras] = useState<Mantra[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const load = async (): Promise<void> => {
-    const data = await fetchMantras();
-    setMantras(data);
+    try {
+      const data = await fetchMantras();
+      setMantras(data);
+    } catch (error) {
+      Alert.alert('Failed to load mantras', getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     load();
   }, []);
+
+  if (loading) {
+    return (
+      <Screen>
+        <View style={styles.empty}><ActivityIndicator size="large" color="#111827" /></View>
+      </Screen>
+    );
+  }
 
   return (
     <Screen>
